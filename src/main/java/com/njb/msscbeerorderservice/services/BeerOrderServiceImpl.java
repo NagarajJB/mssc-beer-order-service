@@ -29,7 +29,6 @@ public class BeerOrderServiceImpl implements BeerOrderService {
 
 	private final BeerOrderRepository beerOrderRepository;
 	private final CustomerRepository customerRepository;
-	@Autowired
 	private final BeerOrderMapper beerOrderMapper;
 	private final ApplicationEventPublisher publisher;
 

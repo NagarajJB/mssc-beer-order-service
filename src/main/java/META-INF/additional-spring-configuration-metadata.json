@@ -1,0 +1,5 @@
+{"properties": [{
+  "name": "sfg.brewery.beer-service-host",
+  "type": "java.lang.String",
+  "description": "A description for 'sfg.brewery.beer-service-host'"
+}]}

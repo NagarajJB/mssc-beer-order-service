@@ -1,5 +1,6 @@
 package com.njb.msscbeerorderservice.web.model;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -13,18 +14,22 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 public class BeerOrderLineDto extends BaseItem {
 
-	@Builder
-	public BeerOrderLineDto(UUID id, Integer version, OffsetDateTime createdDate, OffsetDateTime lastModifiedDate,
-			String upc, String beerName, UUID beerId, Integer orderQuantity) {
-		super(id, version, createdDate, lastModifiedDate);
-		this.upc = upc;
-		this.beerName = beerName;
-		this.beerId = beerId;
-		this.orderQuantity = orderQuantity;
-	}
+    @Builder
+    public BeerOrderLineDto(UUID id, Integer version, OffsetDateTime createdDate, OffsetDateTime lastModifiedDate,
+                            String upc, String beerName,String beerStyle, UUID beerId, Integer orderQuantity, BigDecimal price) {
+        super(id, version, createdDate, lastModifiedDate);
+        this.upc = upc;
+        this.beerName = beerName;
+        this.beerStyle = beerStyle;
+        this.beerId = beerId;
+        this.orderQuantity = orderQuantity;
+        this.price = price;
+    }
 
-	private String upc;
-	private String beerName;
-	private UUID beerId;
-	private Integer orderQuantity = 0;
+    private String upc;
+    private String beerName;
+    private String beerStyle;
+    private UUID beerId;
+    private Integer orderQuantity = 0;
+    private BigDecimal price;
 }
