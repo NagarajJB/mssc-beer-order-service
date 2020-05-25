@@ -44,7 +44,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 		StateMachine<BeerOrderStatusEnum, BeerOrderEventEnum> sm = buildStateMachine(beerOrder);
 
 		Message<BeerOrderEventEnum> message = MessageBuilder.withPayload(eventEnum)
-				.setHeader(BeerOrderManagerImpl.ORDER_ID_HEADER, beerOrder.getId()).build();
+				.setHeader(BeerOrderManagerImpl.ORDER_ID_HEADER, beerOrder.getId().toString()).build();
 
 		sm.sendEvent(message);
 
