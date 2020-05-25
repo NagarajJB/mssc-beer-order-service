@@ -18,8 +18,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BeerOrderManagerImpl implements BeerOrderManager {
 
+	public static final String ORDER_ID_HEADER = "ORDER_ID_HEADER";
+
 	private final StateMachineFactory<BeerOrderStatusEnum, BeerOrderEventEnum> stateMachineFactory;
 	private final BeerOrderRepository beerOrderRepository;
+
+	private final BeerOrderStatusChangeInterceptor beerOrderStatusChangeInterceptor;
 
 	@Override
 	public BeerOrder newBeerOrder(BeerOrder beerOrder) {
@@ -39,7 +43,8 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 
 		StateMachine<BeerOrderStatusEnum, BeerOrderEventEnum> sm = buildStateMachine(beerOrder);
 
-		Message<BeerOrderEventEnum> message = MessageBuilder.withPayload(eventEnum).build();
+		Message<BeerOrderEventEnum> message = MessageBuilder.withPayload(eventEnum)
+				.setHeader(BeerOrderManagerImpl.ORDER_ID_HEADER, beerOrder.getId()).build();
 
 		sm.sendEvent(message);
 
@@ -54,6 +59,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 		sm.stop();
 
 		sm.getStateMachineAccessor().doWithAllRegions(stateMachineAccess -> {
+			stateMachineAccess.addStateMachineInterceptor(beerOrderStatusChangeInterceptor);
 			stateMachineAccess.resetStateMachine(
 					new DefaultStateMachineContext<BeerOrderStatusEnum, BeerOrderEventEnum>(beerOrder.getOrderStatus(),
 							null, null, null));
