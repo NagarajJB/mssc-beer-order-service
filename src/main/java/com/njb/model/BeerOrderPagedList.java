@@ -1,4 +1,4 @@
-package com.njb.msscbeerorderservice.web.model;
+package com.njb.model;
 
 import java.util.List;
 

@@ -9,12 +9,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.njb.model.BeerOrderDto;
+import com.njb.model.BeerOrderLineDto;
 import com.njb.msscbeerorderservice.bootstrap.BeerOrderBootStrap;
 import com.njb.msscbeerorderservice.domain.Customer;
 import com.njb.msscbeerorderservice.repositories.BeerOrderRepository;
 import com.njb.msscbeerorderservice.repositories.CustomerRepository;
-import com.njb.msscbeerorderservice.web.model.BeerOrderDto;
-import com.njb.msscbeerorderservice.web.model.BeerOrderLineDto;
 
 import lombok.extern.slf4j.Slf4j;
 

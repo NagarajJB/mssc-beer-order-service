@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.njb.model.BeerOrderDto;
+import com.njb.model.BeerOrderPagedList;
 import com.njb.msscbeerorderservice.services.BeerOrderService;
-import com.njb.msscbeerorderservice.web.model.BeerOrderDto;
-import com.njb.msscbeerorderservice.web.model.BeerOrderPagedList;
 
 @RequestMapping("/api/v1/customers/{customerId}/")
 @RestController

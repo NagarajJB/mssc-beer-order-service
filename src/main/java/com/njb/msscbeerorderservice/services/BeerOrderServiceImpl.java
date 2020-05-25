@@ -12,14 +12,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.njb.model.BeerOrderDto;
+import com.njb.model.BeerOrderPagedList;
 import com.njb.msscbeerorderservice.domain.BeerOrder;
 import com.njb.msscbeerorderservice.domain.Customer;
 import com.njb.msscbeerorderservice.domain.BeerOrderStatusEnum;
 import com.njb.msscbeerorderservice.repositories.BeerOrderRepository;
 import com.njb.msscbeerorderservice.repositories.CustomerRepository;
 import com.njb.msscbeerorderservice.web.mappers.BeerOrderMapper;
-import com.njb.msscbeerorderservice.web.model.BeerOrderDto;
-import com.njb.msscbeerorderservice.web.model.BeerOrderPagedList;
 
 import lombok.extern.slf4j.Slf4j;
 
