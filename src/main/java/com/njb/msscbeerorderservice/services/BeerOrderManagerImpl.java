@@ -9,6 +9,7 @@ import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
 
+import com.njb.model.BeerOrderDto;
 import com.njb.msscbeerorderservice.domain.BeerOrder;
 import com.njb.msscbeerorderservice.domain.BeerOrderEventEnum;
 import com.njb.msscbeerorderservice.domain.BeerOrderStatusEnum;
@@ -78,11 +79,47 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 		if (isValid) {
 			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_PASSED);
 
-			//get saved order again as sendBeerOrderEvent would save the object to db and beerOrder will be a stale object
+			// get saved order again as sendBeerOrderEvent would save the object to db and
+			// beerOrder will be a stale object
 			BeerOrder validatedOrder = beerOrderRepository.findOneById(beerOrderId);
 			sendBeerOrderEvent(validatedOrder, BeerOrderEventEnum.ALLOCATE_ORDER);
 		} else
 			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_FAILED);
+	}
+
+	@Override
+	public void beerOrderAllocationPassed(BeerOrderDto beerOrderDto) {
+		BeerOrder beerOrder = beerOrderRepository.getOne(beerOrderDto.getId());
+		sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.ALLOCATION_SUCCESS);
+		updateAllocatedQty(beerOrderDto, beerOrder);
+	}
+
+	private void updateAllocatedQty(BeerOrderDto beerOrderDto, BeerOrder beerOrder) {
+		BeerOrder allocatedOrder = beerOrderRepository.getOne(beerOrderDto.getId());
+
+		allocatedOrder.getBeerOrderLines().forEach(beerOrderLine -> {
+			beerOrderDto.getBeerOrderLines().forEach(beerOrderLineDto -> {
+				if (beerOrderLine.getId().equals(beerOrderLineDto.getId())) {
+					beerOrderLine.setQuantityAllocated(beerOrderLineDto.getQuantityAllocated());
+				}
+			});
+		});
+
+		beerOrderRepository.saveAndFlush(beerOrder);
+	}
+
+	@Override
+	public void beerOrderAllocationPendingInventory(BeerOrderDto beerOrderDto) {
+		BeerOrder beerOrder = beerOrderRepository.getOne(beerOrderDto.getId());
+		sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.ALLOCATION_NO_INVENTORY);
+
+		updateAllocatedQty(beerOrderDto, beerOrder);
+	}
+
+	@Override
+	public void beerOrderAllocationFailed(BeerOrderDto beerOrderDto) {
+		BeerOrder beerOrder = beerOrderRepository.getOne(beerOrderDto.getId());
+		sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.ALLOCATION_FAILED);
 	}
 
 }
