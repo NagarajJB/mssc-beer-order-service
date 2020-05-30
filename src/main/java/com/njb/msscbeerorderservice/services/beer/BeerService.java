@@ -3,7 +3,7 @@ package com.njb.msscbeerorderservice.services.beer;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.njb.msscbeerorderservice.services.beer.model.BeerDto;
+import com.njb.model.BeerDto;
 
 public interface BeerService {
 

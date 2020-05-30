@@ -8,7 +8,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.njb.msscbeerorderservice.services.beer.model.BeerDto;
+import com.njb.model.BeerDto;
 
 @ConfigurationProperties(prefix = "sfg.brewery", ignoreUnknownFields = false)
 @Service
