@@ -1,5 +1,7 @@
 package com.njb.msscbeerorderservice.services;
 
+import java.util.UUID;
+
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
@@ -68,6 +70,15 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 		sm.start();
 		return sm;
 
+	}
+
+	@Override
+	public void processValidationResult(UUID orderId, Boolean isValid) {
+		BeerOrder beerOrder = beerOrderRepository.getOne(orderId);
+		if (isValid)
+			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_PASSED);
+		else
+			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_FAILED);
 	}
 
 }

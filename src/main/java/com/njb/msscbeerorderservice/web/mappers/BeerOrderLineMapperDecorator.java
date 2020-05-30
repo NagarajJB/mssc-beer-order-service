@@ -5,10 +5,10 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
+import com.njb.model.BeerDto;
 import com.njb.model.BeerOrderLineDto;
 import com.njb.msscbeerorderservice.domain.BeerOrderLine;
 import com.njb.msscbeerorderservice.services.beer.BeerService;
-import com.njb.msscbeerorderservice.services.beer.model.BeerDto;
 
 public abstract class BeerOrderLineMapperDecorator implements BeerOrderLineMapper {
 
