@@ -78,6 +78,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 		if (isValid) {
 			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_PASSED);
 
+			//get saved order again as sendBeerOrderEvent would save the object to db and beerOrder will be a stale object
 			BeerOrder validatedOrder = beerOrderRepository.findOneById(beerOrderId);
 			sendBeerOrderEvent(validatedOrder, BeerOrderEventEnum.ALLOCATE_ORDER);
 		} else

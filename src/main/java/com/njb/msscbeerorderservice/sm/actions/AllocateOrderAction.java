@@ -33,7 +33,7 @@ public class AllocateOrderAction implements Action<BeerOrderStatusEnum, BeerOrde
 		BeerOrder beerOrder = beerOrderRepository.findOneById(UUID.fromString(beerOrderId));
 
 		jmsTemplate.convertAndSend(JmsConfig.ALLOCATE_ORDER_QUEUE,
-				AllocateOrderRequest.builder().beerOrder(beerOrderMapper.beerOrderToDto(beerOrder)).build());
+				AllocateOrderRequest.builder().beerOrderDto(beerOrderMapper.beerOrderToDto(beerOrder)).build());
 
 		log.debug("Sent Allocation Request for order id: " + beerOrderId);
 
