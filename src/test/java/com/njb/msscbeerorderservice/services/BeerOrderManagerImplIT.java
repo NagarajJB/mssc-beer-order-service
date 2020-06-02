@@ -103,29 +103,14 @@ public class BeerOrderManagerImplIT {
 		BeerOrder beerOrder = createBeerOrder();
 		BeerOrder savedBeerOrder = beerOrderManager.newBeerOrder(beerOrder);
 
-		System.out.println("savedBeerOrder in test " + savedBeerOrder);
-
 		// wait for jms response
 		// Thread.sleep(20000);
 		// Awaitility lets you wait until the asynchronous operation completes:
 
 		Awaitility.await().untilAsserted(() -> {
-			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get(); // TODO ALLOCATED status
-			assertEquals(BeerOrderStatusEnum.ALLOCATION_PENDING, foundOrder.getOrderStatus());
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+			assertEquals(BeerOrderStatusEnum.ALLOCATED, foundOrder.getOrderStatus());
 		});
-
-		BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
-		System.out.println("foundOrder " + foundOrder);
-
-
-		/*
-		 * BeerOrder savedBeerOrder2 =
-		 * beerOrderRepository.findById(savedBeerOrder.getId()).get();
-		 * 
-		 * Assertions.assertNotNull(savedBeerOrder2);
-		 * Assertions.assertEquals(BeerOrderStatusEnum.ALLOCATED,
-		 * savedBeerOrder2.getOrderStatus());
-		 */
 
 	}
 

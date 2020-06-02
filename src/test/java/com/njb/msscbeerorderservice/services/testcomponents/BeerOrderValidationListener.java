@@ -22,7 +22,7 @@ public class BeerOrderValidationListener {
 	@JmsListener(destination = JmsConfig.VALIDATE_ORDER_QUEUE)
 	public void listen(Message message) {
 
-		log.debug("Validate Order test listener.............");
+		log.debug("VALIDATE_ORDER_QUEUE mimic listener.............");
 		
 		ValidateOrderRequest req = (ValidateOrderRequest) message.getPayload();
 
