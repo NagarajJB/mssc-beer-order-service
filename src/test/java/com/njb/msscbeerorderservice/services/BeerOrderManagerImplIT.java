@@ -4,6 +4,7 @@ import static com.github.jenspiegsa.wiremockextension.ManagedWireMockServer.with
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashSet;
@@ -109,7 +110,16 @@ public class BeerOrderManagerImplIT {
 
 		Awaitility.await().untilAsserted(() -> {
 			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
-			assertEquals(BeerOrderStatusEnum.ALLOCATED, foundOrder.getOrderStatus());
+			BeerOrderLine line = foundOrder.getBeerOrderLines().iterator().next();
+			assertEquals(line.getOrderQuantity(), line.getQuantityAllocated());
+		});
+
+		BeerOrder savedBeerOrder2 = beerOrderRepository.findById(savedBeerOrder.getId()).get();
+
+		assertNotNull(savedBeerOrder2);
+		assertEquals(BeerOrderStatusEnum.ALLOCATED, savedBeerOrder2.getOrderStatus());
+		savedBeerOrder2.getBeerOrderLines().forEach(line -> {
+			assertEquals(line.getOrderQuantity(), line.getQuantityAllocated());
 		});
 
 	}
