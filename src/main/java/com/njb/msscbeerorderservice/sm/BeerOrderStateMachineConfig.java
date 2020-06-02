@@ -14,6 +14,14 @@ import com.njb.msscbeerorderservice.domain.BeerOrderStatusEnum;
 
 import lombok.RequiredArgsConstructor;
 
+/*
+ * When an event is triggered, 
+	1. It will execute the action configured (might be consuming api, sending message to JMS etc.)
+	2. If there is a state change for that event, Code in Interceptor will get executed.
+	3. If the service is expecting any messages from other services, listener can be configured and based on the response required events can be triggered.
+	4. It will then follow the same sequence.
+ */
+
 @Configuration
 @EnableStateMachineFactory
 @RequiredArgsConstructor
@@ -37,26 +45,19 @@ public class BeerOrderStateMachineConfig
 	@Override
 	public void configure(StateMachineTransitionConfigurer<BeerOrderStatusEnum, BeerOrderEventEnum> transitions)
 			throws Exception {
-		transitions.withExternal()
-			.source(BeerOrderStatusEnum.NEW).target(BeerOrderStatusEnum.VALIDATION_PENDING)
-			.event(BeerOrderEventEnum.VALIDATE_ORDER).action(validateOrderAction)
-		.and().withExternal()
-			.source(BeerOrderStatusEnum.VALIDATION_PENDING).target(BeerOrderStatusEnum.VALIDATED).event(BeerOrderEventEnum.VALIDATION_PASSED)
-		.and().withExternal()
-			.source(BeerOrderStatusEnum.VALIDATION_PENDING).target(BeerOrderStatusEnum.VALIDATION_EXCEPTION)
-			.event(BeerOrderEventEnum.VALIDATION_FAILED)
-		.and().withExternal()
-			.source(BeerOrderStatusEnum.VALIDATED).target(BeerOrderStatusEnum.ALLOCATION_PENDING)
-			.event(BeerOrderEventEnum.ALLOCATE_ORDER).action(allocateOrderAction)
-		.and().withExternal()
-            .source(BeerOrderStatusEnum.ALLOCATION_PENDING).target(BeerOrderStatusEnum.ALLOCATED)
-            .event(BeerOrderEventEnum.ALLOCATION_SUCCESS)
-        .and().withExternal()
-            .source(BeerOrderStatusEnum.ALLOCATION_PENDING).target(BeerOrderStatusEnum.ALLOCATION_EXCEPTION)
-            .event(BeerOrderEventEnum.ALLOCATION_FAILED)
-        .and().withExternal()
-            .source(BeerOrderStatusEnum.ALLOCATION_PENDING).target(BeerOrderStatusEnum.PENDING_INVENTORY)
-            .event(BeerOrderEventEnum.ALLOCATION_NO_INVENTORY);
+		transitions.withExternal().source(BeerOrderStatusEnum.NEW).target(BeerOrderStatusEnum.VALIDATION_PENDING)
+				.event(BeerOrderEventEnum.VALIDATE_ORDER).action(validateOrderAction).and().withExternal()
+				.source(BeerOrderStatusEnum.VALIDATION_PENDING).target(BeerOrderStatusEnum.VALIDATED)
+				.event(BeerOrderEventEnum.VALIDATION_PASSED).and().withExternal()
+				.source(BeerOrderStatusEnum.VALIDATION_PENDING).target(BeerOrderStatusEnum.VALIDATION_EXCEPTION)
+				.event(BeerOrderEventEnum.VALIDATION_FAILED).and().withExternal().source(BeerOrderStatusEnum.VALIDATED)
+				.target(BeerOrderStatusEnum.ALLOCATION_PENDING).event(BeerOrderEventEnum.ALLOCATE_ORDER)
+				.action(allocateOrderAction).and().withExternal().source(BeerOrderStatusEnum.ALLOCATION_PENDING)
+				.target(BeerOrderStatusEnum.ALLOCATED).event(BeerOrderEventEnum.ALLOCATION_SUCCESS).and().withExternal()
+				.source(BeerOrderStatusEnum.ALLOCATION_PENDING).target(BeerOrderStatusEnum.ALLOCATION_EXCEPTION)
+				.event(BeerOrderEventEnum.ALLOCATION_FAILED).and().withExternal()
+				.source(BeerOrderStatusEnum.ALLOCATION_PENDING).target(BeerOrderStatusEnum.PENDING_INVENTORY)
+				.event(BeerOrderEventEnum.ALLOCATION_NO_INVENTORY);
 	}
 
 }
