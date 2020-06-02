@@ -1,5 +1,6 @@
 package com.njb.msscbeerorderservice.services;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.messaging.Message;
@@ -8,6 +9,7 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.njb.model.BeerOrderDto;
 import com.njb.msscbeerorderservice.domain.BeerOrder;
@@ -73,18 +75,23 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 
 	}
 
+	@Transactional
 	@Override
 	public void processValidationResult(UUID beerOrderId, Boolean isValid) {
-		BeerOrder beerOrder = beerOrderRepository.getOne(beerOrderId);
-		if (isValid) {
-			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_PASSED);
+		Optional<BeerOrder> beerOrderOptional = beerOrderRepository.findById(beerOrderId);
 
-			// get saved order again as sendBeerOrderEvent would save the object to db and
-			// beerOrder will be a stale object
-			BeerOrder validatedOrder = beerOrderRepository.findOneById(beerOrderId);
-			sendBeerOrderEvent(validatedOrder, BeerOrderEventEnum.ALLOCATE_ORDER);
-		} else
-			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_FAILED);
+		beerOrderOptional.ifPresent(beerOrder -> {
+			if (isValid) {
+				sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_PASSED);
+
+				// get saved order again as sendBeerOrderEvent would save the object to db and
+				// beerOrder will be a stale object
+				BeerOrder validatedOrder = beerOrderRepository.findById(beerOrderId).get();
+				sendBeerOrderEvent(validatedOrder, BeerOrderEventEnum.ALLOCATE_ORDER);
+			} else
+				sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_FAILED);
+		});
+
 	}
 
 	@Override

@@ -1,0 +1,110 @@
+package com.njb.msscbeerorderservice.services;
+
+import static com.github.jenspiegsa.wiremockextension.ManagedWireMockServer.with;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jenspiegsa.wiremockextension.WireMockExtension;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.njb.model.BeerDto;
+import com.njb.model.BeerPagedList;
+import com.njb.msscbeerorderservice.domain.BeerOrder;
+import com.njb.msscbeerorderservice.domain.BeerOrderLine;
+import com.njb.msscbeerorderservice.domain.BeerOrderStatusEnum;
+import com.njb.msscbeerorderservice.domain.Customer;
+import com.njb.msscbeerorderservice.repositories.BeerOrderRepository;
+import com.njb.msscbeerorderservice.repositories.CustomerRepository;
+import com.njb.msscbeerorderservice.services.beer.BeerServiceImpl;
+
+@ExtendWith(WireMockExtension.class)
+@SpringBootTest
+public class BeerOrderManagerImplIT {
+
+	@Autowired
+	BeerOrderManager beerOrderManager;
+
+	@Autowired
+	BeerOrderRepository beerOrderRepository;
+
+	@Autowired
+	CustomerRepository customerRepository;
+
+	@Autowired
+	WireMockServer wireMockServer;
+
+	// as we have hibernate in the classpath, spring is going to create an in memory
+	// h2 and work with it
+	Customer testCustomer;
+
+	UUID beerId = UUID.randomUUID();
+
+	@Autowired
+	ObjectMapper objectMapper;
+
+	@TestConfiguration
+	static class RestTemplateBuilderProvider {
+		@Bean(destroyMethod = "stop")
+		public WireMockServer wireMockServer() {
+			WireMockServer server = with(wireMockConfig().port(7073));
+			server.start();
+			return server;
+		}
+
+	}
+
+	@BeforeEach
+	void setUp() {
+		testCustomer = customerRepository.save(Customer.builder().customerName("Test Customer").build());
+	}
+
+	public BeerOrder createBeerOrder() {
+		BeerOrder beerOrder = BeerOrder.builder().customer(testCustomer).build();
+
+		Set<BeerOrderLine> beerOrderLines = new HashSet<BeerOrderLine>();
+
+		beerOrderLines
+				.add(BeerOrderLine.builder().beerId(beerId).upc("12345").orderQuantity(2).beerOrder(beerOrder).build());
+
+		beerOrder.setBeerOrderLines(beerOrderLines);
+
+		return beerOrder;
+	}
+
+	@Test
+	void testNewToAllocated() throws JsonProcessingException, InterruptedException {
+
+		BeerDto beerDto = BeerDto.builder().id(beerId).upc("12345").build();
+
+		wireMockServer.stubFor(get(BeerServiceImpl.BEER_UPC_PATH_V1 + "12345")
+				.willReturn(okJson(objectMapper.writeValueAsString(beerDto))));
+
+		BeerOrder beerOrder = createBeerOrder();
+		BeerOrder savedBeerOrder = beerOrderManager.newBeerOrder(beerOrder);
+
+		Thread.sleep(6000);
+
+		BeerOrder savedBeerOrder2 = beerOrderRepository.findById(savedBeerOrder.getId()).get();
+
+		Assertions.assertNotNull(savedBeerOrder2);
+		Assertions.assertEquals(BeerOrderStatusEnum.ALLOCATED, savedBeerOrder2.getOrderStatus());
+
+	}
+
+}

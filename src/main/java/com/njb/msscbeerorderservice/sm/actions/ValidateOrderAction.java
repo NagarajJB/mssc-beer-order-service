@@ -1,11 +1,13 @@
 package com.njb.msscbeerorderservice.sm.actions;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.njb.model.events.ValidateOrderRequest;
 import com.njb.msscbeerorderservice.config.JmsConfig;
@@ -30,16 +32,19 @@ public class ValidateOrderAction implements Action<BeerOrderStatusEnum, BeerOrde
 	private final BeerOrderRepository beerOrderRepository;
 	private final BeerOrderMapper beerOrderMapper;
 
+	@Transactional
 	@Override
 	public void execute(StateContext<BeerOrderStatusEnum, BeerOrderEventEnum> context) {
 
 		String orderId = (String) context.getMessageHeader(BeerOrderManagerImpl.ORDER_ID_HEADER);
-		BeerOrder beerOrder = beerOrderRepository.findOneById(UUID.fromString(orderId));
+		Optional<BeerOrder> beerOrderOptional = beerOrderRepository.findById(UUID.fromString(orderId));
 
-		jmsTemplate.convertAndSend(JmsConfig.VALIDATE_ORDER_QUEUE,
-				ValidateOrderRequest.builder().beerOrder(beerOrderMapper.beerOrderToDto(beerOrder)).build());
+		beerOrderOptional.ifPresent(beerOrder -> {
+			jmsTemplate.convertAndSend(JmsConfig.VALIDATE_ORDER_QUEUE,
+					ValidateOrderRequest.builder().beerOrder(beerOrderMapper.beerOrderToDto(beerOrder)).build());
 
-		log.debug("Sent validation request for beer order " + orderId);
+			log.debug("Sent validation request for beer order " + orderId);
+		});
 
 	}
 
