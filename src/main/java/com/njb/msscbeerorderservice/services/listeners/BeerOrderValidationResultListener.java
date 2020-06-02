@@ -13,14 +13,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ValidationResultListener {
+public class BeerOrderValidationResultListener {
 
 	private final BeerOrderManager beerOrderManager;
 	
-	@JmsListener(destination = JmsConfig.VALIDATE_ORDER__RESPONSE_QUEUE)
+	@JmsListener(destination = JmsConfig.VALIDATE_ORDER_RESPONSE_QUEUE)
 	public void listen(ValidateOrderResult validateOrderResult) {
 		
-		log.debug("Validation res for "+ validateOrderResult.getOrderId().toString());
+		System.out.println("ValidateOrderResult "+ validateOrderResult);
 		
 		beerOrderManager.processValidationResult(validateOrderResult.getOrderId(), validateOrderResult.getIsValid());
 	}

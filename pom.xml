@@ -128,11 +128,15 @@
 			<artifactId>wiremock-extension</artifactId>
 			<version>0.4.0</version>
 		</dependency>
-		<!-- for unit tests to mimic mq and make it self contained-->
+		<!-- for unit tests to mimic mq and make it self contained -->
 		<dependency>
 			<groupId>org.apache.activemq</groupId>
 			<artifactId>artemis-jms-server</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
 		</dependency>
 	</dependencies>
 
