@@ -138,4 +138,15 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 
 	}
 
+	@Override
+	public void beerOrderPickedUp(UUID id) {
+		Optional<BeerOrder> beerOrderOptional = beerOrderRepository.findById(id);
+		beerOrderOptional.ifPresent(beerOrder -> {
+
+			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.BEERORDER_PICKED_UP);
+
+		});
+
+	}
+
 }
