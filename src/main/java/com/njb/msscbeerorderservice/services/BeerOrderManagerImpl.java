@@ -16,31 +16,28 @@ import com.njb.msscbeerorderservice.domain.BeerOrder;
 import com.njb.msscbeerorderservice.domain.BeerOrderEventEnum;
 import com.njb.msscbeerorderservice.domain.BeerOrderStatusEnum;
 import com.njb.msscbeerorderservice.repositories.BeerOrderRepository;
+import com.njb.msscbeerorderservice.sm.BeerOrderStateChangeInterceptor;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
 @RequiredArgsConstructor
+@Service
 public class BeerOrderManagerImpl implements BeerOrderManager {
 
 	public static final String ORDER_ID_HEADER = "ORDER_ID_HEADER";
 
 	private final StateMachineFactory<BeerOrderStatusEnum, BeerOrderEventEnum> stateMachineFactory;
 	private final BeerOrderRepository beerOrderRepository;
+	private final BeerOrderStateChangeInterceptor beerOrderStateChangeInterceptor;
 
-	private final BeerOrderStatusChangeInterceptor beerOrderStatusChangeInterceptor;
-
+	@Transactional
 	@Override
 	public BeerOrder newBeerOrder(BeerOrder beerOrder) {
-
 		// house keeping if someone has already set id and status
 		beerOrder.setId(null);
 		beerOrder.setOrderStatus(BeerOrderStatusEnum.NEW);
-
-		BeerOrder savedBeerOrder = beerOrderRepository.save(beerOrder);
-
+		BeerOrder savedBeerOrder = beerOrderRepository.saveAndFlush(beerOrder);
 		sendBeerOrderEvent(savedBeerOrder, BeerOrderEventEnum.VALIDATE_ORDER);
-
 		return savedBeerOrder;
 	}
 
@@ -64,7 +61,7 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 		sm.stop();
 
 		sm.getStateMachineAccessor().doWithAllRegions(stateMachineAccess -> {
-			stateMachineAccess.addStateMachineInterceptor(beerOrderStatusChangeInterceptor);
+			stateMachineAccess.addStateMachineInterceptor(beerOrderStateChangeInterceptor);
 			stateMachineAccess.resetStateMachine(
 					new DefaultStateMachineContext<BeerOrderStatusEnum, BeerOrderEventEnum>(beerOrder.getOrderStatus(),
 							null, null, null));
