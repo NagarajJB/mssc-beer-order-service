@@ -2,6 +2,8 @@ package com.njb.msscbeerorderservice.services;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -19,7 +21,9 @@ import com.njb.msscbeerorderservice.repositories.BeerOrderRepository;
 import com.njb.msscbeerorderservice.sm.BeerOrderStateChangeInterceptor;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class BeerOrderManagerImpl implements BeerOrderManager {
@@ -50,6 +54,8 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 			if (isValid) {
 				sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.VALIDATION_PASSED);
 
+				awaitForStatus(beerOrderId, BeerOrderStatusEnum.VALIDATED);
+
 				// get saved order again as sendBeerOrderEvent would save the object to db and
 				// beerOrder will be a stale object
 				BeerOrder validatedOrder = beerOrderRepository.findById(beerOrderId).get();
@@ -66,6 +72,9 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 
 		beerOrderOptional.ifPresent(beerOrder -> {
 			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.ALLOCATION_SUCCESS);
+			
+			awaitForStatus(beerOrder.getId(), BeerOrderStatusEnum.ALLOCATED);
+			
 			updateAllocatedQty(beerOrderDto);
 		});
 	}
@@ -77,6 +86,8 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 		beerOrderOptional.ifPresent(beerOrder -> {
 			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.ALLOCATION_NO_INVENTORY);
 
+			awaitForStatus(beerOrder.getId(), BeerOrderStatusEnum.PENDING_INVENTORY);
+			
 			updateAllocatedQty(beerOrderDto);
 		});
 
@@ -154,6 +165,45 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 		beerOrderRepository.findById(id).ifPresent(beerOrder -> {
 			sendBeerOrderEvent(beerOrder, BeerOrderEventEnum.CANCEL_ORDER);
 		});
+	}
+
+	/*
+	 * Wait for state machine to change state When we send message to SM and send of
+	 * another action First message is completing while other is sent the lock isn't
+	 * released while state machine intercepter is changing status in the database
+	 * before we modify again or send another event
+	 */
+	private void awaitForStatus(UUID beerOrderId, BeerOrderStatusEnum statusEnum) {
+
+		log.debug("Waiting.............................................................");
+		AtomicBoolean found = new AtomicBoolean(false);
+		AtomicInteger loopCount = new AtomicInteger(0);
+
+		while (!found.get()) {
+			if (loopCount.incrementAndGet() > 10) {
+				found.set(true);
+				log.debug("Loop Retries exceeded");
+			}
+
+			beerOrderRepository.findById(beerOrderId).ifPresent(beerOrder -> {
+				if (beerOrder.getOrderStatus().equals(statusEnum)) {
+					found.set(true);
+					log.debug("Order Found");
+				} else {
+					log.debug("Order Status Not Equal. Expected: " + statusEnum.name() + " Found: "
+							+ beerOrder.getOrderStatus().name());
+				}
+			});
+
+			if (!found.get()) {
+				try {
+					log.debug("Sleeping for retry");
+					Thread.sleep(100);
+				} catch (Exception e) {
+					// do nothing
+				}
+			}
+		}
 	}
 
 }
