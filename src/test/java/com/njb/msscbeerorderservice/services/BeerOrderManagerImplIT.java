@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.awaitility.Awaitility;
+import static org.awaitility.Awaitility.await;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,7 @@ import com.github.jenspiegsa.wiremockextension.WireMockExtension;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.njb.model.BeerDto;
 import com.njb.model.events.AllocationFailureEvent;
+import com.njb.model.events.DeallocateOrderRequest;
 import com.njb.msscbeerorderservice.config.JmsConfig;
 import com.njb.msscbeerorderservice.domain.BeerOrder;
 import com.njb.msscbeerorderservice.domain.BeerOrderLine;
@@ -216,6 +218,87 @@ public class BeerOrderManagerImplIT {
 			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
 			assertEquals(BeerOrderStatusEnum.PENDING_INVENTORY, foundOrder.getOrderStatus());
 		});
+	}
+
+	@Test
+	void testValidationPendingToCancel() throws JsonProcessingException {
+		BeerDto beerDto = BeerDto.builder().id(beerId).upc("12345").build();
+
+		wireMockServer.stubFor(get(BeerServiceImpl.BEER_UPC_PATH_V1 + "12345")
+				.willReturn(okJson(objectMapper.writeValueAsString(beerDto))));
+
+		BeerOrder beerOrder = createBeerOrder();
+		beerOrder.setCustomerRef("dont-validate");
+
+		BeerOrder savedBeerOrder = beerOrderManager.newBeerOrder(beerOrder);
+
+		await().untilAsserted(() -> {
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+			assertEquals(BeerOrderStatusEnum.VALIDATION_PENDING, foundOrder.getOrderStatus());
+		});
+
+		beerOrderManager.cancelOrder(savedBeerOrder.getId());
+
+		await().untilAsserted(() -> {
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+			assertEquals(BeerOrderStatusEnum.CANCELLED, foundOrder.getOrderStatus());
+		});
+	}
+
+	@Test
+	void testAllocationPendingToCancel() throws JsonProcessingException {
+		BeerDto beerDto = BeerDto.builder().id(beerId).upc("12345").build();
+
+		wireMockServer.stubFor(get(BeerServiceImpl.BEER_UPC_PATH_V1 + "12345")
+				.willReturn(okJson(objectMapper.writeValueAsString(beerDto))));
+
+		BeerOrder beerOrder = createBeerOrder();
+		beerOrder.setCustomerRef("dont-allocate");
+
+		BeerOrder savedBeerOrder = beerOrderManager.newBeerOrder(beerOrder);
+
+		await().untilAsserted(() -> {
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+			assertEquals(BeerOrderStatusEnum.ALLOCATION_PENDING, foundOrder.getOrderStatus());
+		});
+
+		beerOrderManager.cancelOrder(savedBeerOrder.getId());
+
+		await().untilAsserted(() -> {
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+			assertEquals(BeerOrderStatusEnum.CANCELLED, foundOrder.getOrderStatus());
+		});
+	}
+
+	@Test
+	void testAllocatedToCancel() throws JsonProcessingException {
+		BeerDto beerDto = BeerDto.builder().id(beerId).upc("12345").build();
+
+		wireMockServer.stubFor(get(BeerServiceImpl.BEER_UPC_PATH_V1 + "12345")
+				.willReturn(okJson(objectMapper.writeValueAsString(beerDto))));
+
+		BeerOrder beerOrder = createBeerOrder();
+
+		BeerOrder savedBeerOrder = beerOrderManager.newBeerOrder(beerOrder);
+
+		await().untilAsserted(() -> {
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+			assertEquals(BeerOrderStatusEnum.ALLOCATED, foundOrder.getOrderStatus());
+		});
+
+		beerOrderManager.cancelOrder(savedBeerOrder.getId());
+
+		await().untilAsserted(() -> {
+			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
+			assertEquals(BeerOrderStatusEnum.CANCELLED, foundOrder.getOrderStatus());
+		});
+
+		//check if deallocateOrderRequest is correctly sent to right queue by listening to the same
+		DeallocateOrderRequest deallocateOrderRequest = (DeallocateOrderRequest) jmsTemplate
+				.receiveAndConvert(JmsConfig.DEALLOCATE_ORDER_QUEUE);
+
+		assertNotNull(deallocateOrderRequest);
+		assertThat(deallocateOrderRequest.getBeerOrderDto().getId()).isEqualTo(savedBeerOrder.getId());
 	}
 
 }
