@@ -175,7 +175,6 @@ public class BeerOrderManagerImpl implements BeerOrderManager {
 	 */
 	private void awaitForStatus(UUID beerOrderId, BeerOrderStatusEnum statusEnum) {
 
-		log.debug("Waiting.............................................................");
 		AtomicBoolean found = new AtomicBoolean(false);
 		AtomicInteger loopCount = new AtomicInteger(0);
 
