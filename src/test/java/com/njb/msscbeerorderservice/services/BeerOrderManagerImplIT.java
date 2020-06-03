@@ -4,8 +4,9 @@ import static com.github.jenspiegsa.wiremockextension.ManagedWireMockServer.with
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -19,12 +20,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.jms.core.JmsTemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jenspiegsa.wiremockextension.WireMockExtension;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.njb.model.BeerDto;
+import com.njb.model.events.AllocationFailureEvent;
+import com.njb.msscbeerorderservice.config.JmsConfig;
 import com.njb.msscbeerorderservice.domain.BeerOrder;
 import com.njb.msscbeerorderservice.domain.BeerOrderLine;
 import com.njb.msscbeerorderservice.domain.BeerOrderStatusEnum;
@@ -48,6 +52,9 @@ public class BeerOrderManagerImplIT {
 
 	@Autowired
 	WireMockServer wireMockServer;
+
+	@Autowired
+	JmsTemplate jmsTemplate;
 
 	// as we have hibernate in the classpath, spring is going to create an in memory
 	// h2 and work with it
@@ -177,13 +184,20 @@ public class BeerOrderManagerImplIT {
 
 		BeerOrder beerOrder = createBeerOrder();
 		beerOrder.setCustomerRef("fail-allocation");
-		
+
 		beerOrderManager.newBeerOrder(beerOrder);
 
 		Awaitility.await().untilAsserted(() -> {
 			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
 			assertEquals(BeerOrderStatusEnum.ALLOCATION_EXCEPTION, foundOrder.getOrderStatus());
 		});
+
+		AllocationFailureEvent allocationFailureEvent = (AllocationFailureEvent) jmsTemplate
+				.receiveAndConvert(JmsConfig.ALLOCATE_FAILURE_QUEUE);
+
+		assertNotNull(allocationFailureEvent);
+		assertThat(allocationFailureEvent.getOrderId()).isEqualTo(beerOrder.getId());
+
 	}
 
 	@Test
@@ -197,7 +211,7 @@ public class BeerOrderManagerImplIT {
 		beerOrder.setCustomerRef("partial-allocation");
 
 		beerOrderManager.newBeerOrder(beerOrder);
-		
+
 		Awaitility.await().untilAsserted(() -> {
 			BeerOrder foundOrder = beerOrderRepository.findById(beerOrder.getId()).get();
 			assertEquals(BeerOrderStatusEnum.PENDING_INVENTORY, foundOrder.getOrderStatus());
