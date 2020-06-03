@@ -32,6 +32,7 @@ public class BeerOrderStateMachineConfig
 	private final Action<BeerOrderStatusEnum, BeerOrderEventEnum> allocateOrderAction;
 	private final Action<BeerOrderStatusEnum, BeerOrderEventEnum> validationFailureAction;
     private final Action<BeerOrderStatusEnum, BeerOrderEventEnum> allocationFailureAction;
+    private final Action<BeerOrderStatusEnum, BeerOrderEventEnum> deallocateOrderAction;
 
 
 	@Override
@@ -87,7 +88,7 @@ public class BeerOrderStateMachineConfig
 			.event(BeerOrderEventEnum.BEERORDER_PICKED_UP)
 		.and().withExternal()
 			.source(BeerOrderStatusEnum.ALLOCATED).target(BeerOrderStatusEnum.CANCELLED)
-			.event(BeerOrderEventEnum.CANCEL_ORDER);
+			.event(BeerOrderEventEnum.CANCEL_ORDER).action(deallocateOrderAction);
 	}
 
 	//in theory we could go through cancel pending allocated and cancel exception for more realistic trasitions like allocation
