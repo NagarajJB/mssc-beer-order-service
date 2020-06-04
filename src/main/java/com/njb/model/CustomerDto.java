@@ -32,6 +32,6 @@ public class CustomerDto/* extends BaseItem */ {
 	@JsonProperty("lastModifiedDate")
 	private OffsetDateTime lastModifiedDate = null;
 
-	private String name;
+	private String customerName;
 
 }
